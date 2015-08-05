@@ -30,7 +30,6 @@ import org.ehcache.config.writebehind.ResilientCacheWriter;
 import org.ehcache.exceptions.BulkCacheWritingException;
 import org.ehcache.exceptions.CacheWritingException;
 import org.ehcache.loaderwriter.writebehind.operations.DeleteOperation;
-import org.ehcache.loaderwriter.writebehind.operations.OperationsFilter;
 import org.ehcache.loaderwriter.writebehind.operations.SingleOperation;
 import org.ehcache.loaderwriter.writebehind.operations.SingleOperationType;
 import org.ehcache.loaderwriter.writebehind.operations.WriteOperation;
@@ -69,8 +68,6 @@ public abstract class AbstractWriteBehindQueue<K, V> implements WriteBehind<K, V
   private final CacheLoaderWriter<K, V> cacheLoaderWriter;
   private boolean stopping;
   private boolean stopped;
-  
-  private volatile OperationsFilter<SingleOperation<K, V>> filter = null;
 
   private final AtomicLong lastProcessing = new AtomicLong(System.currentTimeMillis());
   private final AtomicLong lastWorkDone = new AtomicLong(System.currentTimeMillis());
@@ -227,11 +224,6 @@ public abstract class AbstractWriteBehindQueue<K, V> implements WriteBehind<K, V
 
   }
 
-  @Override
-  public void setOperationsFilter(OperationsFilter<SingleOperation<K, V>> filter) {
-    this.filter = filter;
-  }
-
   /**
    * Thread this will continuously process the items in the queue.
    */
@@ -346,8 +338,6 @@ public abstract class AbstractWriteBehindQueue<K, V> implements WriteBehind<K, V
       }
 
       try {
-        filterQuarantined(quarantinedItems);
-
         // if the batching is enabled and work size is smaller than batch size,
         // don't process anything as long as the max allowed delay hasn't expired
         if (writeBatching && writeBatchSize > 0) {
@@ -581,13 +571,6 @@ public abstract class AbstractWriteBehindQueue<K, V> implements WriteBehind<K, V
 
   private long getLastProcessing() {
     return lastProcessing.get();
-  }
-
-  private void filterQuarantined(List<SingleOperation<K, V>> quarantinedItems) {
-    OperationsFilter<SingleOperation<K, V>> operationsFilter = this.filter;
-    if (operationsFilter != null) {
-      operationsFilter.filter(quarantinedItems); 
-    }
   }
 
 }
