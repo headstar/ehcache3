@@ -129,7 +129,11 @@ public class AggregateWriteBehindQueue<K, V> implements WriteBehind<K, V> {
      *
      */
     protected WriteBehind<K, V> createQueue(int index, WriteBehindConfiguration config, CacheLoaderWriter<K, V> cacheLoaderWriter) {
-      return new LocalHeapWriteBehindQueue<K, V>(config, cacheLoaderWriter);
+      if(config.isWriteCoalescing()) {
+        return new CoalescingLocalHeapWriteBehindQueue<K, V>(config, cacheLoaderWriter);
+      } else {
+        return new LocalHeapWriteBehindQueue<K, V>(config, cacheLoaderWriter);
+      }
     }
   }
 
