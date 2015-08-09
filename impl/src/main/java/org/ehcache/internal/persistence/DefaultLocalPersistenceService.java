@@ -23,7 +23,6 @@ import org.ehcache.spi.cache.Store;
 import org.ehcache.spi.service.FileBasedPersistenceContext;
 import org.ehcache.spi.service.LocalPersistenceService;
 import org.ehcache.exceptions.CachePersistenceException;
-import org.ehcache.spi.service.ServiceConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +85,7 @@ public class DefaultLocalPersistenceService implements LocalPersistenceService {
   }
 
   @Override
-  public synchronized void start(final ServiceConfiguration<?> config, final ServiceProvider serviceProvider) {
+  public synchronized void start(final ServiceProvider serviceProvider) {
     if (!started) {
       createLocationIfRequiredAndVerify(rootDirectory);
       try {
@@ -167,6 +166,15 @@ public class DefaultLocalPersistenceService implements LocalPersistenceService {
     }
   }
 
+  @Override
+  public void destroyAllPersistenceContext() {
+    if(recursiveDeleteDirectoryContent(rootDirectory)){
+      LOGGER.info("Destroyed all file based persistence context");
+    } else {
+      LOGGER.warn("Could not delete all file based persistence context");
+    }
+  }
+
   File getLockFile() {
     return lockFile;
   }
@@ -212,6 +220,21 @@ public class DefaultLocalPersistenceService implements LocalPersistenceService {
         LOGGER.warn("Could not delete directory for context {}", identifier);
       }
     }
+  }
+
+  private static boolean recursiveDeleteDirectoryContent(File file) {
+    Boolean deleteSuccessful = true;
+    if (file.isDirectory()) {
+      File[] contents = file.listFiles();
+      if (contents.length > 0) {
+        for (File f : contents) {
+          if(!recursiveDelete(f)) {
+            deleteSuccessful = false;
+          }
+        }
+      }
+    }
+    return deleteSuccessful;
   }
 
   private static boolean recursiveDelete(File file) {
