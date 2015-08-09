@@ -29,35 +29,14 @@ import org.ehcache.spi.loaderwriter.WriteBehindConfiguration;
  * @author Tim wu
  *
  */
-public class LocalHeapWriteBehindQueue<K, V> extends AbstractWriteBehindQueue<K, V> {
+public class LocalHeapWriteBehindQueue<K, V> extends AbstractLocalHeapWriteBehindQueue<K, V> {
   
   private List<SingleOperation<K, V>> waiting = new ArrayList<SingleOperation<K, V>>();
-  private final ConcurrentHashMap<K, SingleOperation<K, V>> latestOperation = new ConcurrentHashMap<K, SingleOperation<K, V>>(); 
 
   LocalHeapWriteBehindQueue(WriteBehindConfiguration config, CacheLoaderWriter<K, V> cacheLoaderWriter) {
     super(config, cacheLoaderWriter);
   }
-  
-  protected SingleOperation<K, V> getLatestOperation(K key) {
-    return latestOperation.get(key);
-  }
-  
-  protected void removeOperation(final SingleOperation<K, V> operation) {
-    latestOperation.computeIfPresent(operation.getKey(), new BiFunction<K, SingleOperation<K, V>, SingleOperation<K, V>>() {
 
-      @Override
-      public SingleOperation<K, V> apply(K t, SingleOperation<K, V> oldOperation) {
-        if(oldOperation == null) {
-          return null; // when trying to remove non existent operation
-        }
-        if(oldOperation == operation) {
-          return null;
-        }
-        return oldOperation;
-      }
-    });
-  }
-  
   @Override
   protected List<SingleOperation<K, V>> quarantineItems() {
     List<SingleOperation<K, V>> quarantined = waiting;
@@ -66,9 +45,8 @@ public class LocalHeapWriteBehindQueue<K, V> extends AbstractWriteBehindQueue<K,
   }
 
   @Override
-  protected void addItem(SingleOperation<K, V> operation) {
-    latestOperation.put(operation.getKey(), operation);
-    waiting.add(operation);    
+  protected void addItemToLocalHeap(SingleOperation<K, V> operation) {
+    waiting.add(operation);
   }
 
   @Override
